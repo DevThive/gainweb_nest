@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 
 @Controller('chat')
@@ -19,5 +19,14 @@ export class ChatController {
   @Get(':category')
   async getMessages(@Param('category') category: string) {
     return this.chatService.getMessages(category);
+  }
+
+  @Get(':category/new')
+  async getNewMessages(
+    @Param('category') category: string,
+    @Query('lastMessageTimestamp') lastMessageTimestamp: string,
+  ) {
+    const lastTimestamp = new Date(lastMessageTimestamp);
+    return this.chatService.getNewMessages(category, lastTimestamp);
   }
 }

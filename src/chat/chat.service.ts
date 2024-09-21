@@ -9,14 +9,14 @@ export class ChatService {
     const message = {
       category,
       content,
-      user, // 사용자 정보를 매개변수로 받아 저장
+      user,
       timestamp: new Date().toISOString(),
     };
 
     const key = `chat:${category}`;
 
     try {
-      await this.redisService.getClient().lpush(key, JSON.stringify(message)); // 메시지를 리스트에 추가
+      await this.redisService.getClient().lpush(key, JSON.stringify(message));
       await this.redisService.getClient().expire(key, 10800); // TTL 3시간 설정
     } catch (error) {
       console.error('메시지 전송 중 오류 발생:', error);
@@ -30,19 +30,38 @@ export class ChatService {
     const key = `chat:${category}`;
 
     try {
-      // 리스트에서 모든 메시지를 가져옵니다.
       const messages = await this.redisService.getClient().lrange(key, 0, -1);
 
-      // 메시지가 없으면 빈 배열 반환
       if (!messages || messages.length === 0) {
         return [];
       }
 
-      // JSON 파싱하여 배열로 반환 후 역순으로 정렬
-      return messages.map((msg) => JSON.parse(msg)).reverse(); // 역순으로 정렬
+      return messages.map((msg) => JSON.parse(msg)).reverse();
     } catch (error) {
       console.error('메시지 불러오기 중 오류 발생:', error);
       throw new Error('메시지를 불러올 수 없습니다.');
+    }
+  }
+
+  async getNewMessages(category: string, lastMessageTimestamp: Date) {
+    const key = `chat:${category}`;
+
+    try {
+      const messages = await this.redisService.getClient().lrange(key, 0, -1);
+
+      if (!messages || messages.length === 0) {
+        return [];
+      }
+
+      const newMessages = messages
+        .map((msg) => JSON.parse(msg))
+        .filter((msg) => new Date(msg.timestamp) > lastMessageTimestamp)
+        .reverse(); // 새로운 메시지를 역순으로 반환
+
+      return newMessages;
+    } catch (error) {
+      console.error('새로운 메시지 불러오기 중 오류 발생:', error);
+      throw new Error('새로운 메시지를 불러올 수 없습니다.');
     }
   }
 }
